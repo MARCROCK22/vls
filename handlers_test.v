@@ -13211,3 +13211,19 @@ fn test_a_name_used_alone_is_never_a_method() {
 	assert 'greet' !in entry.docs
 	assert entry.docs['wave'] or { '' } == 'wave waves.'
 }
+
+// sorter_main passes a local `a` to a method of a struct named `sort`, and has
+// an array sorted with the `a` and `b` its `sort` declares.
+const sorter_main = 'module main\n\nstruct Sorter {}\n\nfn (s Sorter) sort(value int) int {\n\treturn value\n}\n\nfn main() {\n\ta := 7\n\ts := Sorter{}\n\tprintln(s.sort(a))\n\tnums := [3, 1, 2]\n\tmut sorted := nums.clone()\n\tsorted.sort(a < b)\n\tprintln(sorted)\n\tprintln(a)\n}\n'
+
+fn test_rename_of_a_local_passed_to_a_method_named_like_an_array_one() {
+	// V3 says where each occurrence is declared: the argument of a user's
+	// `s.sort(a)` is the local, and the `a` of an array's `sort(a < b)` is not.
+	if !v3_answers_line_info {
+		return
+	}
+	edits := rename_edits_in({
+		'main.v': sorter_main
+	}, 'main.v:10:2')
+	assert edits == ['main.v:10:2', 'main.v:12:17', 'main.v:17:10'], edits.str()
+}
